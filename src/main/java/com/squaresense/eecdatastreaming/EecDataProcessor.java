@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Bytes;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.Materialized;
-import org.apache.kafka.streams.kstream.Serialized;
-import org.apache.kafka.streams.kstream.TimeWindows;
+import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
@@ -24,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @SpringBootApplication
 public class EecDataProcessor {
 
+    public static final int SIZE_MS = 1 * 3600 * 1000;
     @Autowired
     private InteractiveQueryService interactiveQueryService;
 
@@ -32,19 +30,21 @@ public class EecDataProcessor {
 
         @StreamListener("input")
         public void process(KStream<String, EecDataEvent> input) {
+
             ObjectMapper mapper = new ObjectMapper();
             Serde<EecDataEvent> eecDataEventSerde = new JsonSerde<>( EecDataEvent.class, mapper );
+            Serde<EecData> eecDataSerde = new JsonSerde<>(EecData.class, mapper);
 
-            input
-                    .groupByKey(Serialized.with(null, eecDataEventSerde))
-                    .windowedBy(TimeWindows.of(1 *3600 * 1000))
-                    .aggregate(
-                            String::new,
-                            (s, eecDataEvent, newEecData) -> null,
-                            Materialized.<String, String, KeyValueStore<Bytes, byte[]>>as("eec-data")
+            TimeWindowedKStream<String, EecDataEvent> grouped =   input
+                    .groupByKey(Serialized.with(new JsonSerde<>(String.class, mapper ), eecDataEventSerde))
+                    .windowedBy(TimeWindows.of(SIZE_MS));
+
+            KTable<Windowed<String>, EecData> aggregate = grouped
+                    .aggregate(EecData::new,
+                            (aggKey, eecDataEvent, aggEecData) -> aggEecData.aggregate(eecDataEvent),
+                            Materialized.<String, EecData, KeyValueStore<Bytes, byte[]>>as("eec-data")
                                     .withKeySerde(Serdes.String()).
-                                    withValueSerde(Serdes.String())
-                    );
+                                    withValueSerde(eecDataSerde));
         }
     }
 
