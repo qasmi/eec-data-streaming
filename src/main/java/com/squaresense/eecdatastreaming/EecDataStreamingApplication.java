@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.boot.SpringApplication;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.serializer.JsonSerde;
@@ -16,9 +17,8 @@ import java.util.Map;
 public class EecDataStreamingApplication {
 
 	public static void main(String[] args) {
-
 		ObjectMapper mapper = new ObjectMapper();
-		Serde<EecDataEvent> domainEventSerde = new JsonSerde<>(EecDataEvent.class, mapper);
+		Serde<EecDataEvent> eecDataEventSerde = new JsonSerde<>(EecDataEvent.class, mapper);
 
 
 		Map<String, Object> props = new HashMap<>();
@@ -28,11 +28,11 @@ public class EecDataStreamingApplication {
 		props.put(ProducerConfig.LINGER_MS_CONFIG, 1);
 		props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
 		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, domainEventSerde.serializer().getClass());
+		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, eecDataEventSerde.serializer().getClass());
 
 		EecDataEvent eecDataEvent = new EecDataEvent();
 		eecDataEvent.setMeter("12345");
-		eecDataEvent.setDate(Instant.now());
+		eecDataEvent.setDate(Instant.now().getEpochSecond());
 		eecDataEvent.setEnergy(BigDecimal.TEN);
 		eecDataEvent.setPower(BigDecimal.ONE);
 

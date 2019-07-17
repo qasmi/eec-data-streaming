@@ -1,16 +1,10 @@
 package com.squaresense.eecdatastreaming;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-import java.beans.Transient;
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Data
-@Builder
 public class EecData {
 
     private BigDecimal energyConsumption;
@@ -29,23 +23,6 @@ public class EecData {
         this.predIndex =  BigDecimal.ZERO;
     }
 
-    public EecData(BigDecimal energyConsumption, BigDecimal meanPower, BigDecimal minPower, BigDecimal maxPower, int count, BigDecimal predIndex) {
-        this.energyConsumption = energyConsumption;
-        this.meanPower = meanPower;
-        this.minPower = minPower;
-        this.maxPower = maxPower;
-        this.count = count;
-        this.predIndex = predIndex;
-    }
-
-    public EecData(EecDataEvent leftReducer, EecDataEvent rigthReducer) {
-        this.minPower = leftReducer.getPower().min(rigthReducer.getPower());
-        this.maxPower = leftReducer.getPower().max(rigthReducer.getPower());
-        this.meanPower = leftReducer.getPower().add(rigthReducer.getPower());
-        this.energyConsumption = leftReducer.getEnergy().add(rigthReducer.getEnergy().add(predIndex.negate()));
-        this.predIndex = rigthReducer.getEnergy();
-    }
-
     public EecData aggregate(EecDataEvent event){
         this.minPower = event.getPower().min(minPower);
         this.maxPower = event.getPower().max(maxPower);
@@ -56,7 +33,7 @@ public class EecData {
         return this;
     }
 
-    public EecData calculateMeanPower(){
+    public EecData updateEecMetrics(){
         this.meanPower = this.meanPower.divide(new BigDecimal(count),2, BigDecimal.ROUND_HALF_UP);
         return this;
     }

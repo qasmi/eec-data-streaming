@@ -15,7 +15,7 @@ import java.time.Instant;
 public class EecDataEvent {
 
     private String meter;
-    private Instant date;
+    private Long date;
     private BigDecimal energy;
     private BigDecimal power;
 }
